@@ -1,9 +1,10 @@
 package org.zalando.logbook;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
+
 
 final class Mockbook implements Logbook {
 
@@ -17,6 +18,7 @@ final class Mockbook implements Logbook {
     private final ResponseFilter responseFilter;
     private final HttpLogFormatter formatter;
     private final HttpLogWriter writer;
+    private final CorrelationIdProvider correlationIdProvider;
 
     public Mockbook(
             @Nullable final Predicate<RawHttpRequest> predicate,
@@ -28,7 +30,8 @@ final class Mockbook implements Logbook {
             @Nullable final RequestFilter requestFilter,
             @Nullable final ResponseFilter responseFilter,
             @Nullable final HttpLogFormatter formatter,
-            @Nullable final HttpLogWriter writer) {
+            @Nullable final HttpLogWriter writer,
+            @Nullable final CorrelationIdProvider correlationIdProvider) {
         this.predicate = predicate;
         this.rawRequestFilter = rawRequestFilter;
         this.rawResponseFilter = rawResponseFilter;
@@ -39,6 +42,7 @@ final class Mockbook implements Logbook {
         this.responseFilter = responseFilter;
         this.formatter = formatter;
         this.writer = writer;
+        this.correlationIdProvider = correlationIdProvider;
     }
 
     @Override
@@ -84,6 +88,10 @@ final class Mockbook implements Logbook {
 
     public HttpLogWriter getWriter() {
         return writer;
+    }
+
+    public CorrelationIdProvider getCorrelationIdProvider() {
+        return correlationIdProvider;
     }
 
 }

@@ -1,10 +1,10 @@
 package org.zalando.logbook;
 
-import lombok.Singular;
-
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
+
+import lombok.Singular;
 
 public final class LogbookCreator {
 
@@ -23,7 +23,8 @@ public final class LogbookCreator {
             @Singular final List<RequestFilter> requestFilters,
             @Singular final List<ResponseFilter> responseFilters,
             @Nullable final HttpLogFormatter formatter,
-            @Nullable final HttpLogWriter writer) {
+            @Nullable final HttpLogWriter writer,
+            @Nullable final CorrelationIdProvider correlationIdProvider) {
 
         @Nullable final RawRequestFilter rawRequestFilter = rawRequestFilters.stream()
                 .reduce(RawRequestFilter::merge)
@@ -65,7 +66,8 @@ public final class LogbookCreator {
                 requestFilter,
                 responseFilter,
                 formatter,
-                writer);
+                writer,
+                correlationIdProvider);
     }
 
 }

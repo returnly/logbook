@@ -5,8 +5,8 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Predicate;
+
 
 final class DefaultLogbook implements Logbook {
 
@@ -18,6 +18,7 @@ final class DefaultLogbook implements Logbook {
     private final HttpLogFormatter formatter;
     private final HttpLogWriter writer;
     private final Clock clock = Clock.systemUTC();
+    private final CorrelationIdProvider correlationIdProvider;
 
     DefaultLogbook(
             final Predicate<RawHttpRequest> predicate,
@@ -26,7 +27,8 @@ final class DefaultLogbook implements Logbook {
             final RequestFilter requestFilter,
             final ResponseFilter responseFilter,
             final HttpLogFormatter formatter,
-            final HttpLogWriter writer) {
+            final HttpLogWriter writer,
+            final CorrelationIdProvider correlationIdProvider) {
         this.predicate = predicate;
         this.rawRequestFilter = rawRequestFilter;
         this.rawResponseFilter = rawResponseFilter;
@@ -34,13 +36,14 @@ final class DefaultLogbook implements Logbook {
         this.responseFilter = responseFilter;
         this.formatter = formatter;
         this.writer = writer;
+        this.correlationIdProvider = correlationIdProvider;
     }
 
     @Override
     public Optional<Correlator> write(final RawHttpRequest rawHttpRequest) throws IOException {
         final Instant start = Instant.now(clock);
         if (writer.isActive(rawHttpRequest) && predicate.test(rawHttpRequest)) {
-            final String correlationId = UUID.randomUUID().toString();
+            final String correlationId = correlationIdProvider.getId();
             final RawHttpRequest filteredRawHttpRequest = rawRequestFilter.filter(rawHttpRequest);
             final HttpRequest request = requestFilter.filter(filteredRawHttpRequest.withBody());
 

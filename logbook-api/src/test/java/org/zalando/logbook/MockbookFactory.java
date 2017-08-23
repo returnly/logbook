@@ -1,7 +1,9 @@
 package org.zalando.logbook;
 
-import javax.annotation.Nullable;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
+
 
 public final class MockbookFactory implements LogbookFactory {
 
@@ -16,7 +18,8 @@ public final class MockbookFactory implements LogbookFactory {
             @Nullable final RequestFilter requestFilter,
             @Nullable final ResponseFilter responseFilter,
             @Nullable final HttpLogFormatter formatter,
-            @Nullable final HttpLogWriter writer) {
+            @Nullable final HttpLogWriter writer,
+            @Nullable final CorrelationIdProvider correlationIdProvider) {
 
         return new Mockbook(
                 condition,
@@ -28,7 +31,8 @@ public final class MockbookFactory implements LogbookFactory {
                 requestFilter,
                 responseFilter,
                 formatter,
-                writer);
+                writer,
+                correlationIdProvider);
     }
 
 }

@@ -2,6 +2,7 @@ package org.zalando.logbook.spring;
 
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.servlet.Filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,7 +65,8 @@ public class LogbookAutoConfiguration {
             final List<RequestFilter> requestFilters,
             final List<ResponseFilter> responseFilters,
             @SuppressWarnings("SpringJavaAutowiringInspection") final HttpLogFormatter formatter,
-            final HttpLogWriter writer) {
+            final HttpLogWriter writer,
+            final CorrelationIdProvider correlationIdProvider) {
         return Logbook.builder()
                 .condition(mergeWithExcludes(condition))
                 .rawRequestFilters(rawRequestFilters)
@@ -76,6 +78,7 @@ public class LogbookAutoConfiguration {
                 .responseFilters(responseFilters)
                 .formatter(formatter)
                 .writer(writer)
+                .correlationIdProvider(correlationIdProvider)
                 .build();
     }
 
@@ -186,6 +189,13 @@ public class LogbookAutoConfiguration {
     public Logger httpLogger() {
         return LoggerFactory.getLogger(properties.getWrite().getCategory());
     }
+
+    @Bean
+    @ConditionalOnMissingBean(CorrelationIdProvider.class)
+    public CorrelationIdProvider correlationIdProvider() {
+        return CorrelationIdProvider.DEFAULT;
+    }
+
 
     @Configuration
     @ConditionalOnClass({

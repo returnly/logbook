@@ -1,15 +1,16 @@
 package org.zalando.logbook;
 
+import java.util.function.Predicate;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.util.function.Predicate;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -98,6 +99,7 @@ public class LogbookTest {
                         .responseFilters(asList(responseFilter, responseFilter))
                         .formatter(formatter)
                         .writer(writer)
+                        .correlationIdProvider(() -> "dummy")
                         .build();
             default:
                 throw new UnsupportedOperationException();
@@ -206,6 +208,18 @@ public class LogbookTest {
         final Mockbook unit = setUp(times);
         unit.getResponseFilter().filter(mock(HttpResponse.class));
         verify(responseFilter, times(times)).filter(any());
+    }
+
+    @Test
+    void shouldUseDefaultCorrelationIdProvider() {
+        final Mockbook unit = setUp(0);
+        assertThat(unit.getCorrelationIdProvider(), is(nullValue()));
+    }
+
+    @Test
+    void shouldUseCustomCorrelationIdProvider() {
+        final Mockbook unit = setUp(3);
+        assertThat(unit.getCorrelationIdProvider().getId(), is("dummy"));
     }
 
 }

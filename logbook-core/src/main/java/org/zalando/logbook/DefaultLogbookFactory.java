@@ -1,9 +1,9 @@
 package org.zalando.logbook;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 
 public final class DefaultLogbookFactory implements LogbookFactory {
@@ -19,7 +19,8 @@ public final class DefaultLogbookFactory implements LogbookFactory {
             @Nullable final RequestFilter requestFilter,
             @Nullable final ResponseFilter responseFilter,
             @Nullable final HttpLogFormatter formatter,
-            @Nullable final HttpLogWriter writer) {
+            @Nullable final HttpLogWriter writer,
+            @Nullable final CorrelationIdProvider correlationIdProvider) {
 
 
         final Predicate<RawHttpRequest> condition = Optional.ofNullable(nullableCondition)
@@ -44,7 +45,8 @@ public final class DefaultLogbookFactory implements LogbookFactory {
                 combine(queryFilter, header, body, requestFilter),
                 combine(header, body, responseFilter),
                 Optional.ofNullable(formatter).orElseGet(DefaultHttpLogFormatter::new),
-                Optional.ofNullable(writer).orElseGet(DefaultHttpLogWriter::new)
+                Optional.ofNullable(writer).orElseGet(DefaultHttpLogWriter::new),
+                Optional.ofNullable(correlationIdProvider).orElse(CorrelationIdProvider.DEFAULT)
         );
     }
 

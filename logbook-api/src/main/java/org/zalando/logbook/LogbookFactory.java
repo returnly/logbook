@@ -1,7 +1,7 @@
 package org.zalando.logbook;
 
-import javax.annotation.Nullable;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static java.util.ServiceLoader.load;
 
@@ -19,6 +19,7 @@ interface LogbookFactory {
             @Nullable final RequestFilter requestFilter,
             @Nullable final ResponseFilter responseFilter,
             @Nullable final HttpLogFormatter formatter,
-            @Nullable final HttpLogWriter writer);
+            @Nullable final HttpLogWriter writer,
+            @Nullable final CorrelationIdProvider correlationIdProvider);
 
 }
