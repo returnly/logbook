@@ -1,5 +1,9 @@
 package org.zalando.logbook.spring;
 
+import java.util.List;
+import java.util.function.Predicate;
+import javax.servlet.Filter;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
@@ -13,44 +17,19 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.SecurityFilterAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.security.web.SecurityFilterChain;
-import org.zalando.logbook.BodyFilter;
-import org.zalando.logbook.BodyFilters;
-import org.zalando.logbook.ChunkingHttpLogWriter;
-import org.zalando.logbook.Conditions;
-import org.zalando.logbook.CurlHttpLogFormatter;
-import org.zalando.logbook.DefaultHttpLogFormatter;
-import org.zalando.logbook.DefaultHttpLogWriter;
+import org.zalando.logbook.*;
 import org.zalando.logbook.DefaultHttpLogWriter.Level;
-import org.zalando.logbook.HeaderFilter;
-import org.zalando.logbook.HeaderFilters;
-import org.zalando.logbook.HttpLogFormatter;
-import org.zalando.logbook.HttpLogWriter;
-import org.zalando.logbook.JsonHttpLogFormatter;
-import org.zalando.logbook.Logbook;
-import org.zalando.logbook.QueryFilter;
-import org.zalando.logbook.QueryFilters;
-import org.zalando.logbook.RawHttpRequest;
-import org.zalando.logbook.RawRequestFilter;
-import org.zalando.logbook.RawRequestFilters;
-import org.zalando.logbook.RawResponseFilter;
-import org.zalando.logbook.RawResponseFilters;
-import org.zalando.logbook.RequestFilter;
-import org.zalando.logbook.ResponseFilter;
 import org.zalando.logbook.httpclient.LogbookHttpRequestInterceptor;
 import org.zalando.logbook.httpclient.LogbookHttpResponseInterceptor;
 import org.zalando.logbook.servlet.LogbookFilter;
 import org.zalando.logbook.servlet.Strategy;
-
-import javax.servlet.Filter;
-import java.util.List;
-import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 import static javax.servlet.DispatcherType.ASYNC;
@@ -242,7 +221,7 @@ public class LogbookAutoConfiguration {
         @ConditionalOnMissingBean(name = FILTER_NAME)
         public FilterRegistrationBean authorizedLogbookFilter(final Logbook logbook) {
             final Filter filter = new LogbookFilter(logbook);
-            final FilterRegistrationBean registration = new FilterRegistrationBean(filter);
+            final FilterRegistrationBean<?> registration = new FilterRegistrationBean<>(filter);
             registration.setName(FILTER_NAME);
             registration.setDispatcherTypes(REQUEST, ASYNC, ERROR);
             registration.setOrder(Ordered.LOWEST_PRECEDENCE);
@@ -264,7 +243,7 @@ public class LogbookAutoConfiguration {
         @ConditionalOnMissingBean(name = FILTER_NAME)
         public FilterRegistrationBean unauthorizedLogbookFilter(final Logbook logbook) {
             final Filter filter = new LogbookFilter(logbook, Strategy.SECURITY);
-            final FilterRegistrationBean registration = new FilterRegistrationBean(filter);
+            final FilterRegistrationBean<?> registration = new FilterRegistrationBean<>(filter);
             registration.setName(FILTER_NAME);
             registration.setDispatcherTypes(REQUEST, ASYNC, ERROR);
             registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);

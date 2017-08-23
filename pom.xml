@@ -68,10 +68,10 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <slf4j.version>1.7.21</slf4j.version>
-        <jackson.version>2.8.2</jackson.version>
-        <spring.version>4.3.8.RELEASE</spring.version>
-        <spring-boot.version>1.5.3.RELEASE</spring-boot.version>
-        <spring-security.version>4.2.2.RELEASE</spring-security.version>
+        <jackson.version>2.9.0.pr4</jackson.version>
+        <spring.version>5.0.0.RC3</spring.version>
+        <spring-boot.version>2.0.0.M3</spring-boot.version>
+        <spring-security.version>5.0.0.M3</spring-security.version>
 
         <junit-platform.version>1.0.0-RC2</junit-platform.version>
         <junit-jupiter.version>5.0.0-RC2</junit-jupiter.version>
@@ -137,12 +137,6 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>jcl-over-slf4j</artifactId>
-                <version>${slf4j.version}</version>
-                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -328,10 +322,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-        </dependency>
 
         <!-- testing -->
         <dependency>
@@ -496,12 +486,19 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <extensions>
+            <extension>
+                <groupId>org.kuali.maven.wagons</groupId>
+                <artifactId>maven-s3-wagon</artifactId>
+                <version>1.2.1</version>
+            </extension>
+        </extensions>
     </build>
 
     <distributionManagement>
         <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <id>returnly-snapshots</id>
+            <url>s3://returnly-java-repo/snapshots</url>
         </snapshotRepository>
         <repository>
             <id>ossrh</id>
@@ -553,17 +550,6 @@
                                 </goals>
                             </execution>
                         </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.7</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>ossrh</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>
