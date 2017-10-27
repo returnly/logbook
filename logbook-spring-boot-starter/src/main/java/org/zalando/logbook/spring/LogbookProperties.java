@@ -1,11 +1,11 @@
 package org.zalando.logbook.spring;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.zalando.logbook.DefaultHttpLogWriter.Level;
 import org.zalando.logbook.Logbook;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @ConfigurationProperties(prefix = "logbook")
 public final class LogbookProperties {
@@ -13,6 +13,7 @@ public final class LogbookProperties {
     private final List<String> exclude = new ArrayList<>();
     private final Obfuscate obfuscate = new Obfuscate();
     private final Write write = new Write();
+    private final Format format = new Format();
 
     public List<String> getExclude() {
         return exclude;
@@ -24,6 +25,10 @@ public final class LogbookProperties {
 
     public Write getWrite() {
         return write;
+    }
+
+    public Format getFormat() {
+        return format;
     }
 
     public static class Obfuscate {
@@ -69,6 +74,22 @@ public final class LogbookProperties {
 
         public void setChunkSize(final int chunkSize) {
             this.chunkSize = chunkSize;
+        }
+
+    }
+
+    public static class Format {
+
+        public enum Style { http, curl, json }
+
+        private Style style = Style.json;
+
+        public Style getStyle() {
+            return style;
+        }
+
+        public void setStyle(final Style style) {
+            this.style = style;
         }
 
     }

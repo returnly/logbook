@@ -153,24 +153,15 @@ public class LogbookAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(HttpLogFormatter.class)
-    @ConditionalOnProperty(name = "logbook.format.style", havingValue = "http")
     public HttpLogFormatter httpFormatter() {
-        return new DefaultHttpLogFormatter();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(HttpLogFormatter.class)
-    @ConditionalOnProperty(name = "logbook.format.style", havingValue = "curl")
-    public HttpLogFormatter curlFormatter() {
-        return new CurlHttpLogFormatter();
-    }
-
-    @Bean
-    @ConditionalOnBean(ObjectMapper.class)
-    @ConditionalOnMissingBean(HttpLogFormatter.class)
-    public HttpLogFormatter jsonFormatter(
-            @SuppressWarnings("SpringJavaAutowiringInspection") final ObjectMapper mapper) {
-        return new JsonHttpLogFormatter(mapper);
+        switch (properties.getFormat().getStyle()) {
+            case http:
+                return new DefaultHttpLogFormatter();
+            case curl:
+                return new CurlHttpLogFormatter();
+            default:
+                return new JsonHttpLogFormatter();
+        }
     }
 
     @Bean
