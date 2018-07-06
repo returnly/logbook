@@ -2,11 +2,11 @@ package org.zalando.logbook.spring;
 
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import javax.servlet.Filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.client.HttpClient;
+import org.apiguardian.api.API;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,16 +17,35 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.SecurityFilterAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.security.web.SecurityFilterChain;
-import org.zalando.logbook.*;
+import org.zalando.logbook.BodyFilter;
+import org.zalando.logbook.ChunkingHttpLogWriter;
+import org.zalando.logbook.Conditions;
+import org.zalando.logbook.CorrelationIdProvider;
+import org.zalando.logbook.CurlHttpLogFormatter;
+import org.zalando.logbook.DefaultHttpLogFormatter;
+import org.zalando.logbook.DefaultHttpLogWriter;
 import org.zalando.logbook.DefaultHttpLogWriter.Level;
+import org.zalando.logbook.HeaderFilter;
+import org.zalando.logbook.HeaderFilters;
+import org.zalando.logbook.HttpLogFormatter;
+import org.zalando.logbook.HttpLogWriter;
+import org.zalando.logbook.JsonHttpLogFormatter;
+import org.zalando.logbook.Logbook;
+import org.zalando.logbook.QueryFilter;
+import org.zalando.logbook.QueryFilters;
+import org.zalando.logbook.RawHttpRequest;
+import org.zalando.logbook.RawRequestFilter;
+import org.zalando.logbook.RawRequestFilters;
+import org.zalando.logbook.RawResponseFilter;
+import org.zalando.logbook.RawResponseFilters;
+import org.zalando.logbook.RequestFilter;
+import org.zalando.logbook.ResponseFilter;
 import org.zalando.logbook.httpclient.LogbookHttpRequestInterceptor;
 import org.zalando.logbook.httpclient.LogbookHttpResponseInterceptor;
 import org.zalando.logbook.servlet.LogbookFilter;
@@ -37,22 +56,30 @@ import static javax.servlet.DispatcherType.ASYNC;
 import static javax.servlet.DispatcherType.ERROR;
 import static javax.servlet.DispatcherType.REQUEST;
 
+import static org.apiguardian.api.API.Status.INTERNAL;
+import static org.apiguardian.api.API.Status.STABLE;
+import static org.zalando.logbook.BodyFilters.defaultValue;
+import static org.zalando.logbook.BodyFilters.truncate;
+
+@API(status = STABLE)
 @Configuration
 @ConditionalOnClass(Logbook.class)
 @EnableConfigurationProperties(LogbookProperties.class)
-@AutoConfigureAfter({
-        JacksonAutoConfiguration.class,
-        WebMvcAutoConfiguration.class,
+@AutoConfigureAfter(value = JacksonAutoConfiguration.class, name = {
+        "org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration", // Spring Boot 1.x
+        "org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration" // Spring Boot 2.x
 })
 public class LogbookAutoConfiguration {
 
     private final LogbookProperties properties;
 
+    @API(status = INTERNAL)
     @Autowired
     public LogbookAutoConfiguration(final LogbookProperties properties) {
         this.properties = properties;
     }
 
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(Logbook.class)
     public Logbook logbook(
@@ -89,24 +116,28 @@ public class LogbookAutoConfiguration {
                 .reduce(predicate, Predicate::and);
     }
 
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(name = "requestCondition")
     public Predicate<RawHttpRequest> requestCondition() {
         return $ -> true;
     }
 
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(RawRequestFilter.class)
     public RawRequestFilter rawRequestFilter() {
         return RawRequestFilters.defaultValue();
     }
 
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(RawResponseFilter.class)
     public RawResponseFilter rawResponseFilter() {
         return RawResponseFilters.defaultValue();
     }
 
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(QueryFilter.class)
     public QueryFilter queryFilter() {
@@ -120,6 +151,7 @@ public class LogbookAutoConfiguration {
                         .orElseGet(QueryFilter::none);
     }
 
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(HeaderFilter.class)
     public HeaderFilter headerFilter() {
@@ -133,37 +165,60 @@ public class LogbookAutoConfiguration {
                         .orElseGet(HeaderFilter::none);
     }
 
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(BodyFilter.class)
     public BodyFilter bodyFilter() {
-        return BodyFilters.defaultValue();
+        final LogbookProperties.Write write = properties.getWrite();
+        final int maxBodySize = write.getMaxBodySize();
+
+        if (maxBodySize < 0) {
+            return defaultValue();
+        }
+
+        return BodyFilter.merge(truncate(maxBodySize), defaultValue());
     }
 
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(RequestFilter.class)
     public RequestFilter requestFilter() {
         return RequestFilter.none();
     }
 
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(ResponseFilter.class)
     public ResponseFilter responseFilter() {
         return ResponseFilter.none();
     }
 
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(HttpLogFormatter.class)
+    @ConditionalOnProperty(name = "logbook.format.style", havingValue = "http")
     public HttpLogFormatter httpFormatter() {
-        switch (properties.getFormat().getStyle()) {
-            case http:
-                return new DefaultHttpLogFormatter();
-            case curl:
-                return new CurlHttpLogFormatter();
-            default:
-                return new JsonHttpLogFormatter();
-        }
+        return new DefaultHttpLogFormatter();
     }
 
+    @API(status = INTERNAL)
+    @Bean
+    @ConditionalOnMissingBean(HttpLogFormatter.class)
+    @ConditionalOnProperty(name = "logbook.format.style", havingValue = "curl")
+    public HttpLogFormatter curlFormatter() {
+        return new CurlHttpLogFormatter();
+    }
+
+    @API(status = INTERNAL)
+    @Bean
+    @ConditionalOnBean(ObjectMapper.class)
+    @ConditionalOnMissingBean(HttpLogFormatter.class)
+    public HttpLogFormatter jsonFormatter(
+            @SuppressWarnings("SpringJavaAutowiringInspection") final ObjectMapper mapper) {
+        return new JsonHttpLogFormatter(mapper);
+    }
+
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(HttpLogWriter.class)
     public HttpLogWriter writer(final Logger httpLogger) {
@@ -175,6 +230,7 @@ public class LogbookAutoConfiguration {
         return size > 0 ? new ChunkingHttpLogWriter(size, writer) : writer;
     }
 
+    @API(status = INTERNAL)
     @Bean
     @ConditionalOnMissingBean(name = "httpLogger")
     public Logger httpLogger() {
@@ -222,7 +278,8 @@ public class LogbookAutoConfiguration {
         @ConditionalOnMissingBean(name = FILTER_NAME)
         public FilterRegistrationBean authorizedLogbookFilter(final Logbook logbook) {
             final Filter filter = new LogbookFilter(logbook);
-            final FilterRegistrationBean<?> registration = new FilterRegistrationBean<>(filter);
+            @SuppressWarnings("unchecked") // as of Spring Boot 2.x
+            final FilterRegistrationBean registration = new FilterRegistrationBean(filter);
             registration.setName(FILTER_NAME);
             registration.setDispatcherTypes(REQUEST, ASYNC, ERROR);
             registration.setOrder(Ordered.LOWEST_PRECEDENCE);
@@ -234,7 +291,10 @@ public class LogbookAutoConfiguration {
     @Configuration
     @ConditionalOnClass(SecurityFilterChain.class)
     @ConditionalOnWebApplication
-    @AutoConfigureAfter(SecurityFilterAutoConfiguration.class)
+    @AutoConfigureAfter(name = {
+            "org.springframework.boot.autoconfigure.security.SecurityFilterAutoConfiguration", // Spring Boot 1.x
+            "org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration" // Spring Boot 2.x
+    })
     static class SecurityServletFilterConfiguration {
 
         private static final String FILTER_NAME = "unauthorizedLogbookFilter";
@@ -244,7 +304,8 @@ public class LogbookAutoConfiguration {
         @ConditionalOnMissingBean(name = FILTER_NAME)
         public FilterRegistrationBean unauthorizedLogbookFilter(final Logbook logbook) {
             final Filter filter = new LogbookFilter(logbook, Strategy.SECURITY);
-            final FilterRegistrationBean<?> registration = new FilterRegistrationBean<>(filter);
+            @SuppressWarnings("unchecked") // as of Spring Boot 2.x
+            final FilterRegistrationBean registration = new FilterRegistrationBean(filter);
             registration.setName(FILTER_NAME);
             registration.setDispatcherTypes(REQUEST, ASYNC, ERROR);
             registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);

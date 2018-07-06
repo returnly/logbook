@@ -47,9 +47,10 @@ final class DefaultLogbook implements Logbook {
             final RawHttpRequest filteredRawHttpRequest = rawRequestFilter.filter(rawHttpRequest);
             final HttpRequest request = requestFilter.filter(filteredRawHttpRequest.withBody());
 
-            final Precorrelation<HttpRequest> precorrelation = new SimplePrecorrelation<>(correlationId, request);
-            final String format = formatter.format(precorrelation);
-            writer.writeRequest(new SimplePrecorrelation<>(correlationId, format));
+            final Precorrelation<HttpRequest> precorrelation =
+                    new SimplePrecorrelation<>(correlationId, request, request);
+            final String formattedRequest = formatter.format(precorrelation);
+            writer.writeRequest(new SimplePrecorrelation<>(correlationId, formattedRequest, request));
 
             return Optional.of(rawHttpResponse -> {
                 final Instant end = Instant.now(clock);
@@ -58,9 +59,9 @@ final class DefaultLogbook implements Logbook {
                 final HttpResponse response = responseFilter.filter(filteredRawHttpResponse.withBody());
                 final Correlation<HttpRequest, HttpResponse> correlation =
                         new SimpleCorrelation<>(correlationId, duration, request, response, request, response);
-                final String message = formatter.format(correlation);
-                writer.writeResponse(
-                        new SimpleCorrelation<>(correlationId, duration, format, message, request, response));
+                final String formattedResponse = formatter.format(correlation);
+                writer.writeResponse(new SimpleCorrelation<>(correlationId, duration,
+                        formattedRequest, formattedResponse, request, response));
             });
         } else {
             return Optional.empty();
@@ -71,10 +72,12 @@ final class DefaultLogbook implements Logbook {
 
         private final String id;
         private final I request;
+        private final HttpRequest originalRequest;
 
-        public SimplePrecorrelation(final String id, final I request) {
+        public SimplePrecorrelation(final String id, final I request, final HttpRequest originalRequest) {
             this.id = id;
             this.request = request;
+            this.originalRequest = originalRequest;
         }
 
         @Override
@@ -85,6 +88,11 @@ final class DefaultLogbook implements Logbook {
         @Override
         public I getRequest() {
             return request;
+        }
+
+        @Override
+        public HttpRequest getOriginalRequest() {
+            return originalRequest;
         }
 
     }
@@ -99,7 +107,7 @@ final class DefaultLogbook implements Logbook {
         private final HttpResponse originalResponse;
 
         SimpleCorrelation(final String id, final Duration duration, final I request, final O response,
-                final HttpRequest originalRequest, final HttpResponse originalResponse) {
+                          final HttpRequest originalRequest, final HttpResponse originalResponse) {
             this.id = id;
             this.duration = duration;
             this.request = request;

@@ -4,7 +4,8 @@
 
 [![Build Status](https://img.shields.io/travis/zalando/logbook/master.svg)](https://travis-ci.org/zalando/logbook)
 [![Coverage Status](https://img.shields.io/coveralls/zalando/logbook/master.svg)](https://coveralls.io/r/zalando/logbook)
-[![Javadoc](https://javadoc-emblem.rhcloud.com/doc/org.zalando/logbook-core/badge.svg)](http://www.javadoc.io/doc/org.zalando/logbook-core)
+[![Code Quality](https://img.shields.io/codacy/grade/1304955ee1cb4597a37267aac596bcb3/master.svg)](https://www.codacy.com/app/whiskeysierra/logbook)
+[![Javadoc](http://javadoc.io/badge/org.zalando/logbook-core.svg)](http://www.javadoc.io/doc/org.zalando/logbook-core)
 [![Release](https://img.shields.io/github/release/zalando/logbook.svg)](https://github.com/zalando/logbook/releases)
 [![Maven Central](https://img.shields.io/maven-central/v/org.zalando/logbook-parent.svg)](https://maven-badges.herokuapp.com/maven-central/org.zalando/logbook-parent)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/zalando/logbook/master/LICENSE)
@@ -20,7 +21,7 @@ Logbook is ready to use out of the box for most common setups. Even for uncommon
 
 - **Logging**: of HTTP requests and responses, including the body; partial logging (no body) for unauthorized requests
 - **Customization**: of logging format, logging destination, and conditions that request to log
-- **Support**: for Servlet containers, Apache’s HTTP client, and (via its elegant API) other frameworks
+- **Support**: for Servlet containers, Apache’s HTTP client, Square's OkHttp, and (via its elegant API) other frameworks
 - Optional obfuscation of sensitive data
 - [Spring Boot](http://projects.spring.io/spring-boot/) Auto Configuration
 - [Scalyr](docs/scalyr.md) compatible
@@ -32,11 +33,14 @@ Logbook is ready to use out of the box for most common setups. Even for uncommon
 - Any build tool using Maven Central, or direct download
 - Servlet Container (optional)
 - Apache HTTP Client (optional)
-- Spring Boot (optional)
+- OkHttp (optional)
+- Spring 4.x **or 5.x** (optional)
+- Spring Boot 1.x **or 2.x** (optional)
+- JAX-RS 2.x Client and Server (optional)
 
 ## Installation
 
-Selectively add the following dependencies to your project:
+Add the following dependency to your project:
 
 ```xml
 <dependency>
@@ -44,20 +48,52 @@ Selectively add the following dependencies to your project:
     <artifactId>logbook-core</artifactId>
     <version>${logbook.version}</version>
 </dependency>
+```
+
+Additional modules/artifacts of Logbook always share the same version number.
+
+Alternatively, you can import our *bill of materials*...
+
+```xml
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.zalando</groupId>
+      <artifactId>logbook-bom</artifactId>
+      <version>${logbook.version}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+```
+
+... which allows you to omit versions:
+
+```xml
+<dependency>
+    <groupId>org.zalando</groupId>
+    <artifactId>logbook-core</artifactId>
+</dependency>
 <dependency>
     <groupId>org.zalando</groupId>
     <artifactId>logbook-servlet</artifactId>
-    <version>${logbook.version}</version>
 </dependency>
 <dependency>
     <groupId>org.zalando</groupId>
     <artifactId>logbook-httpclient</artifactId>
-    <version>${logbook.version}</version>
+</dependency>
+<dependency>
+    <groupId>org.zalando</groupId>
+    <artifactId>logbook-jaxrs</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.zalando</groupId>
+    <artifactId>logbook-okhttp</artifactId>
 </dependency>
 <dependency>
     <groupId>org.zalando</groupId>
     <artifactId>logbook-spring-boot-starter</artifactId>
-    <version>${logbook.version}</version>
 </dependency>
 ```
 
@@ -316,7 +352,7 @@ You’ll have to register the `LogbookFilter` as a `Filter` in your filter chain
 ```xml
 <filter>
     <filter-name>LogbookFilter</filter-name>
-    <filter-class>org.zalando.logbook.LogbookFilter</filter-class>
+    <filter-class>org.zalando.logbook.servlet.LogbookFilter</filter-class>
 </filter>
 <filter-mapping>
     <filter-name>LogbookFilter</filter-name>
@@ -333,6 +369,20 @@ or programmatically, via the `ServletContext`:
 context.addFilter("LogbookFilter", new LogbookFilter(logbook))
     .addMappingForUrlPatterns(EnumSet.of(REQUEST, ASYNC, ERROR), true, "/*"); 
 ```
+
+The `LogbookFilter` will, by default, treat requests with a `application/x-www-form-urlencoded` body not different from
+any other request, i.e you will see the request body in the logs. The downside of this approach is that you won't be
+able to use any of the `HttpServletRequest.getParameter*(..)` methods. See issue [#94](../../issues/94) for some more
+details.
+
+As of Logbook 1.5.0, you can now specify one of three strategies that define how Logbook deals with this situation by
+using the `logbook.servlet.form-request` system property:
+
+| Value            | Pros                                                                              | Cons                                               |
+|------------------|-----------------------------------------------------------------------------------|----------------------------------------------------|
+| `body` (default) | Body is logged                                                                    | Downstream code can **not use `getParameter*()`**  |
+| `parameter`      | Body is logged (but it's reconstructed from parameters)                           | Downstream code can **not use `getInputStream()`** |
+| `off`            | Downstream code can decide whether to use `getInputStream()` or `getParameter*()` | Body is **not logged**                             |
 
 #### Security
 
@@ -374,6 +424,28 @@ CloseableHttpAsyncClient client = HttpAsyncClientBuilder.create()
         
 // and then wrap your response consumer
 client.execute(producer, new LogbookHttpAsyncResponseConsumer<>(consumer), callback)
+```
+
+### JAX-RS
+
+The `logbook-jaxrs` module contains:
+ - a `LogbookClientFilter` for use with applications making HTTP requests
+```java
+  client.register(new LogbookClientFilter(logbook));
+```
+ - a `LogbookServerFilter` for use with HTTP servers
+```java
+  resourceConfig.register(new LogbookServerFilter(logbook));
+```
+
+### OkHttp
+
+The `logbook-okhttp` module contains an `Interceptor` to use with the `OkHttpClient`:
+
+```java
+OkHttpClient client = new OkHttpClient.Builder()
+        .addNetworkInterceptor(new LogbookInterceptor(logbook))
+        .build();
 ```
 
 ### Spring Boot Starter
@@ -418,6 +490,7 @@ The following tables show the available configuration:
 | `logbook.write.category`       | Changes the category of the [`DefaultHttpLogWriter`](#logger)    | `org.zalando.logbook.Logbook` |
 | `logbook.write.level`          | Changes the level of the [`DefaultHttpLogWriter`](#logger)       | `TRACE`                       |
 | `logbook.write.chunk-size`     | Splits log lines into smaller chunks of size up-to `chunk-size`. | `0` (disabled)                |
+| `logbook.write.max-body-size`  | Truncates the body up to `max-body-size` and appends `...`.      | `-1` (disabled)               |
 
 ##### Example configuration
 
@@ -443,8 +516,6 @@ logbook:
 
 ## Known Issues
 
-The Logbook Servlet integration is **incompatible with incoming POST requests that use `application/x-www-form-urlencoded`** form parameters and use any of the `HttpServletRequest.getParameter*(..)` methods. See issue [#94](../../issues/94) for details.
-
 The Logbook HTTP Client integration is handling gzip-compressed response entities incorrectly if the interceptor runs before a decompressing interceptor. Since logging compressed contents is not really helpful it's advised to register the logbook interceptor as the last interceptor in the chain.
 
 ## Getting Help with Logbook
@@ -454,7 +525,7 @@ If you have questions, concerns, bug reports, etc., please file an issue in this
 ## Getting Involved/Contributing
 
 To contribute, simply make a pull request and add a brief description (1-2 sentences) of your addition or change. For
-more details, check the [contribution guidelines](CONTRIBUTING.md).
+more details, check the [contribution guidelines](.github/CONTRIBUTING.md).
 
 ## Alternatives
 

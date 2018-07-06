@@ -5,7 +5,12 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apiguardian.api.API;
 
+import static org.apiguardian.api.API.Status.INTERNAL;
+
+
+@API(status = INTERNAL)
 public final class DefaultLogbookFactory implements LogbookFactory {
 
     @Override
@@ -24,19 +29,19 @@ public final class DefaultLogbookFactory implements LogbookFactory {
 
 
         final Predicate<RawHttpRequest> condition = Optional.ofNullable(nullableCondition)
-                .orElse($ -> true);
+                                                            .orElse($ -> true);
 
         final HeaderFilter header = Optional.ofNullable(headerFilter)
-                .orElseGet(HeaderFilters::defaultValue);
+                                            .orElseGet(HeaderFilters::defaultValue);
 
         final BodyFilter body = Optional.ofNullable(bodyFilter)
-                .orElseGet(BodyFilters::defaultValue);
+                                        .orElseGet(BodyFilters::defaultValue);
 
         final RawRequestFilter rawRequestFilter = Optional.ofNullable(nullableRawRequestFilter)
-                .orElseGet(RawRequestFilters::defaultValue);
+                                                          .orElseGet(RawRequestFilters::defaultValue);
 
         final RawResponseFilter rawResponseFilter = Optional.ofNullable(nullableRawResponseFilter)
-                .orElseGet(RawResponseFilters::defaultValue);
+                                                            .orElseGet(RawResponseFilters::defaultValue);
 
         return new DefaultLogbook(
                 condition,

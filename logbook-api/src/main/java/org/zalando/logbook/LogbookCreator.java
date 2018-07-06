@@ -5,11 +5,22 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import lombok.Singular;
+import org.apiguardian.api.API;
 
+import static org.apiguardian.api.API.Status.INTERNAL;
+import static org.apiguardian.api.API.Status.STABLE;
+
+
+@API(status = INTERNAL)
 public final class LogbookCreator {
 
-    LogbookCreator() {
-        // package private so we can trick code coverage
+    private LogbookCreator() {
+
+    }
+
+    @API(status = STABLE)
+    public static final class Builder {
+
     }
 
     @lombok.Builder(builderClassName = "Builder")
@@ -27,32 +38,32 @@ public final class LogbookCreator {
             @Nullable final CorrelationIdProvider correlationIdProvider) {
 
         @Nullable final RawRequestFilter rawRequestFilter = rawRequestFilters.stream()
-                .reduce(RawRequestFilter::merge)
-                .orElse(null);
+                                                                             .reduce(RawRequestFilter::merge)
+                                                                             .orElse(null);
 
         @Nullable final RawResponseFilter rawResponseFilter = rawResponseFilters.stream()
-                .reduce(RawResponseFilter::merge)
-                .orElse(null);
+                                                                                .reduce(RawResponseFilter::merge)
+                                                                                .orElse(null);
 
         @Nullable final QueryFilter queryFilter = queryFilters.stream()
-                .reduce(QueryFilter::merge)
-                .orElse(null);
+                                                              .reduce(QueryFilter::merge)
+                                                              .orElse(null);
 
         @Nullable final HeaderFilter headerFilter = headerFilters.stream()
-                .reduce(HeaderFilter::merge)
-                .orElse(null);
+                                                                 .reduce(HeaderFilter::merge)
+                                                                 .orElse(null);
 
         @Nullable final BodyFilter bodyFilter = bodyFilters.stream()
-                .reduce(BodyFilter::merge)
-                .orElse(null);
+                                                           .reduce(BodyFilter::merge)
+                                                           .orElse(null);
 
         @Nullable final RequestFilter requestFilter = requestFilters.stream()
-                .reduce(RequestFilter::merge)
-                .orElse(null);
+                                                                    .reduce(RequestFilter::merge)
+                                                                    .orElse(null);
 
         @Nullable final ResponseFilter responseFilter = responseFilters.stream()
-                .reduce(ResponseFilter::merge)
-                .orElse(null);
+                                                                       .reduce(ResponseFilter::merge)
+                                                                       .orElse(null);
 
         final LogbookFactory factory = LogbookFactory.INSTANCE;
 

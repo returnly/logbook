@@ -10,12 +10,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-
 interface HttpFilter extends Filter {
 
     @Override
-    default void init(final FilterConfig filterConfig) throws ServletException {
-
+    default void init(final FilterConfig filterConfig) {
+        // no initialization needed by default
     }
 
     @Override
@@ -37,7 +36,7 @@ interface HttpFilter extends Filter {
 
     @Override
     default void destroy() {
-
+        // no deconstruction needed by default
     }
 
 }

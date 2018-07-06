@@ -1,12 +1,18 @@
 package org.zalando.logbook.spring;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apiguardian.api.API;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.zalando.logbook.DefaultHttpLogWriter.Level;
 import org.zalando.logbook.Logbook;
 
+import static org.apiguardian.api.API.Status.INTERNAL;
+
+
+@API(status = INTERNAL)
 @ConfigurationProperties(prefix = "logbook")
 public final class LogbookProperties {
 
@@ -50,7 +56,8 @@ public final class LogbookProperties {
 
         private String category = Logbook.class.getName();
         private Level level = Level.TRACE;
-        private int chunkSize = 0;
+        private int chunkSize;
+        private int maxBodySize = -1;
 
         public String getCategory() {
             return category;
@@ -74,6 +81,14 @@ public final class LogbookProperties {
 
         public void setChunkSize(final int chunkSize) {
             this.chunkSize = chunkSize;
+        }
+
+        public int getMaxBodySize() {
+            return maxBodySize;
+        }
+
+        public void setMaxBodySize(final int maxBodySize) {
+            this.maxBodySize = maxBodySize;
         }
 
     }

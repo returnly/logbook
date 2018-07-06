@@ -12,6 +12,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasToString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -220,6 +221,11 @@ public class LogbookTest {
     void shouldUseCustomCorrelationIdProvider() {
         final Mockbook unit = setUp(3);
         assertThat(unit.getCorrelationIdProvider().getId(), is("dummy"));
+    }
+
+    @Test
+    void shouldUseBuilderToString() {
+        assertThat(Logbook.builder(), hasToString(notNullValue()));
     }
 
 }

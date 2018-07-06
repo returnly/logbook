@@ -1,5 +1,7 @@
 package org.zalando.logbook;
 
+import org.apiguardian.api.API;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.BiPredicate;
@@ -7,15 +9,17 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static java.util.Collections.emptyList;
+import static org.apiguardian.api.API.Status.STABLE;
 import static org.zalando.logbook.RequestURI.Component.AUTHORITY;
 import static org.zalando.logbook.RequestURI.Component.PATH;
 import static org.zalando.logbook.RequestURI.Component.SCHEME;
 import static org.zalando.logbook.RequestURI.reconstruct;
 
+@API(status = STABLE)
 public final class Conditions {
 
-    Conditions() {
-        // package private so we can trick code coverage
+    private Conditions() {
+
     }
 
     @SafeVarargs
@@ -48,6 +52,10 @@ public final class Conditions {
 
         return message ->
                 query.test(message.getContentType());
+    }
+
+    public static <T extends BaseHttpMessage> Predicate<T> withoutContentType() {
+        return message -> message.getContentType() == null;
     }
 
     public static <T extends BaseHttpMessage> Predicate<T> header(final String key, final String value) {

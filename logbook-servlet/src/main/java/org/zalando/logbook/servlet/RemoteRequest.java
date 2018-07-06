@@ -1,9 +1,11 @@
 package org.zalando.logbook.servlet;
 
+import lombok.SneakyThrows;
 import org.zalando.logbook.HttpRequest;
 import org.zalando.logbook.Origin;
 import org.zalando.logbook.RawHttpRequest;
 
+import javax.activation.MimeType;
 import javax.annotation.Nullable;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -12,7 +14,9 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -20,9 +24,13 @@ import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.list;
-
+import static java.util.stream.Collectors.joining;
 
 final class RemoteRequest extends HttpServletRequestWrapper implements RawHttpRequest, HttpRequest {
+
+    private static final byte[] EMPTY_BODY = new byte[0];
+
+    private final FormRequestMode formRequestMode = FormRequestMode.fromProperties();
 
     /**
      * Null until we successfully intercepted it.
@@ -89,8 +97,50 @@ final class RemoteRequest extends HttpServletRequestWrapper implements RawHttpRe
 
     @Override
     public HttpRequest withBody() throws IOException {
+        if (isFormRequest()) {
+            switch (formRequestMode) {
+                case PARAMETER:
+                    this.body = reconstructBodyFromParameters();
+                    return this;
+                case OFF:
+                    this.body = EMPTY_BODY;
+                    return this;
+                default:
+                    break;
+            }
+        }
+
         body = ByteStreams.toByteArray(super.getInputStream());
         return this;
+    }
+
+    private boolean isFormRequest() {
+        return Optional.ofNullable(getContentType())
+                .flatMap(MimeTypes::parse)
+                .filter(this::isFormRequest)
+                .isPresent();
+    }
+
+    private boolean isFormRequest(final MimeType contentType) {
+        return "application".equals(contentType.getPrimaryType()) &&
+                "x-www-form-urlencoded".equals(contentType.getSubType());
+    }
+
+    private byte[] reconstructBodyFromParameters() {
+        return getParameterMap().entrySet().stream()
+                .flatMap(entry -> Arrays.stream(entry.getValue())
+                        .map(value -> encode(entry.getKey()) + "=" + encode(value)))
+                .collect(joining("&"))
+                .getBytes(UTF_8);
+    }
+
+    private static String encode(final String s) {
+        return encode(s, "UTF-8");
+    }
+
+    @SneakyThrows
+    static String encode(final String s, final String charset) {
+        return URLEncoder.encode(s, charset);
     }
 
     @Override
