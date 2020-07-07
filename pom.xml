@@ -132,7 +132,7 @@
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.0</version>
+                <version>1.18.8</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>
@@ -397,14 +397,14 @@
                 <groupId>org.basepom.maven</groupId>
                 <artifactId>duplicate-finder-maven-plugin</artifactId>
             </plugin>
-            <plugin>
+            <!--plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
+            </plugin-->
+            <!--plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
-            </plugin>
+            </plugin-->
         </plugins>
         <pluginManagement>
             <plugins>
@@ -550,7 +550,7 @@
     <distributionManagement>
         <snapshotRepository>
             <id>returnly-snapshots</id>
-            <url>s3://returnly-java-repo/snapshots</url>
+            <url>http://global-nexus-repo.returnly.sdm.network/repository/maven-snapshots/</url>
         </snapshotRepository>
         <repository>
             <id>ossrh</id>
